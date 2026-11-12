@@ -146,3 +146,67 @@ See [architecture and metric definitions](docs/architecture.md) and [sources and
 - **`Cannot reach API`** in the browser — start Uvicorn on port 8000 and confirm the frontend API base URL.
 - **`Cannot place vm-...`** — request fewer/smaller VMs or increase Host CPU/RAM limits. The builder intentionally rejects oversubscription.
 - **422 errors** — fix invalid scenario numbers, mismatched `vm_specs` length or AWLB weights not summing to 1.
+
+## Expansion 1: Multi-seed benchmarking and research reports
+
+Run an experiment matrix using **the same workload for FCFS, RR and AWLB at each seed**. The runner now creates a separate comparison for every scenario and seed, then calculates per-policy means and sample standard deviations. These are **descriptive statistics**, not significance tests.
+
+From `cloudwise/backend` (with the dependencies installed):
+
+```bash
+python -m cloudwise.benchmark --seeds 11 42 73
+```
+
+To run a quick test first:
+
+```bash
+python -m cloudwise.benchmark --scenarios ../scenarios/light.json --seeds 42
+```
+
+The exports go to `results/reports/`:
+
+- `experiment-report.json`: full raw rows, per-policy aggregates and model assumptions.
+- `experiment-runs.csv`: one row per scenario/seed/policy.
+- `experiment-aggregate.csv`: mean and sample standard deviation per scenario/policy.
+- `experiment-report.md`: human-readable report ready for review.
+
+The default benchmark runs four scenarios × three seeds × three algorithms = **36 policy runs**. Increase the number of seeds before drawing conclusions about performance. AWLB is a heuristic, not a learned model, and results are simulated estimates.
+
+The React dashboard also offers **Export run JSON** and **Export comparison JSON** buttons once a result exists. Those download exactly the JSON returned by FastAPI, without fabricated metrics.
+
+
+## Expansion 2 — Simulated dynamic VM scaling
+
+Run the optional controller with the provided scenario:
+
+```bash
+cd backend
+python -m pip install -r requirements-dev.txt
+python -m pytest -q
+python -m cloudwise.cli --scenario ../scenarios/scaling-heavy.json
+```
+
+This writes a run JSON and task/allocation CSV files into `results/raw/`. When
+scaling events occur, a `*-scaling-events.csv` file is also saved. The API
+`POST /api/simulations/run` accepts the same scenario object; the response
+contains `scalingEvents`, `summary.scaleOutEvents`, `summary.scaleInEvents`,
+and `summary.finalActiveVms` when scaling is enabled.
+
+**Controller assumptions:** scaling is disabled by default. It samples the
+instantaneous busy-VM fraction each configured number of simulated seconds.
+Scale-out requires both sustained CPU pressure and pending queued work.
+Scale-in requires sustained low pressure and an entirely idle VM, which is
+removed newest-first. A single shared cooldown applies after either action.
+New VMs are first-fit placed on existing Hosts and consume real modelled
+Host CPU-core/MIPS/RAM budgets; adding Hosts is not supported. VMs must be
+uniform size when scaling is enabled. Existing tasks remain pinned to their
+assigned VMs; there is no task migration. CPU/RAM summary utilisation uses
+capacity-time over actual VM lifetimes, including retired VMs.
+
+**Experiment integrity:** `--compare` is intentionally rejected for scaling
+scenarios. Compare FCFS/RR/AWLB with fixed capacity separately; to compare
+scaling settings, run independently configured scenarios using the same seed.
+The controller does not provision actual infrastructure.
+
+The FCFS baseline always picks the first eligible VM, so it may not make
+effective use of VMs added later; use AWLB/RR to investigate dynamic balancing.

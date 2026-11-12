@@ -5,6 +5,7 @@ import SummaryCards from '../components/SummaryCards';
 import VMMetricsTable from '../components/VMMetricsTable';
 import TaskTable from '../components/TaskTable';
 import ComparisonChart from '../charts/ComparisonChart';
+import { downloadJson } from '../services/download';
 
 export default function Dashboard() {
   const [config, setConfig] = useState(defaultScenario);
@@ -48,14 +49,28 @@ export default function Dashboard() {
         <ScenarioForm config={config} setConfig={setConfig} busy={busy}
           onRun={() => submit(false)} onCompare={() => submit(true)} />
         {error && <div role="alert" className="rounded-lg border border-red-200 bg-red-50 p-4 text-sm text-red-800">{error}</div>}
-        {comparison && <ComparisonChart comparison={comparison} />}
+        {comparison && <>
+          <div className="flex justify-end">
+            <button type="button" className="rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-medium hover:bg-slate-50"
+              onClick={() => downloadJson(comparison, `${comparison.scenario.name}-comparison.json`)}>
+              Export comparison JSON
+            </button>
+          </div>
+          <ComparisonChart comparison={comparison} />
+        </>}
         {result ? <>
           <div className="flex flex-wrap items-end justify-between gap-2">
             <div>
               <h2 className="text-xl font-semibold">Results · {result.algorithm}</h2>
               <p className="text-sm text-slate-500">Run ID: {result.runId} · Schema {result.schemaVersion}</p>
             </div>
-            <p className="text-xs text-slate-500">All time values are simulated seconds</p>
+            <div className="flex flex-wrap items-center gap-3">
+              <p className="text-xs text-slate-500">All time values are simulated seconds</p>
+              <button type="button" className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm font-medium hover:bg-slate-50"
+                onClick={() => downloadJson(result, `${result.runId}.json`)}>
+                Export run JSON
+              </button>
+            </div>
           </div>
           <SummaryCards summary={result.summary} />
           <VMMetricsTable rows={result.vmMetrics} />

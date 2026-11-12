@@ -33,6 +33,14 @@ def save_run(result: dict, output_dir: str | Path) -> list[Path]:
                 writer.writerow({key: json.dumps(value) if isinstance(value, dict) else value
                                  for key, value in row.items()})
         paths.append(csv_path)
+    if result.get("scalingEvents"):
+        scaling_path = folder / f"{prefix}-scaling-events.csv"
+        with scaling_path.open("w", newline="", encoding="utf-8") as handle:
+            events = result["scalingEvents"]
+            writer = csv.DictWriter(handle, fieldnames=list(events[0]))
+            writer.writeheader()
+            writer.writerows(events)
+        paths.append(scaling_path)
     return paths
 
 

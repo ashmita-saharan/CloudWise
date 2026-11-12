@@ -1,0 +1,20 @@
+{
+  "name": "scaling-heavy",
+  "hosts": 3,
+  "vms": 2,
+  "tasks": 120,
+  "seed": 42,
+  "algorithm": "AWLB",
+  "arrival_window": 10,
+  "task_length_mi_min": 8000,
+  "task_length_mi_max": 16000,
+  "scaling_enabled": true,
+  "scaling_min_vms": 2,
+  "scaling_max_vms": 8,
+  "scaling_sample_interval": 1,
+  "scaling_up_threshold": 0.8,
+  "scaling_down_threshold": 0.3,
+  "scaling_up_window": 2,
+  "scaling_down_window": 4,
+  "scaling_cooldown": 5
+}

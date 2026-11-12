@@ -13,6 +13,8 @@ class VM:
     mips_per_core: float
     ram_mb: int
     cpu_slot: simpy.Resource = field(repr=False)
+    created_at: float = 0.0
+    removed_at: float | None = None
     queued_work_mi: int = 0
     queued_ram_mb: int = 0
     ram_in_use_mb: int = 0

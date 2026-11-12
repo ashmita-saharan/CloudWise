@@ -7,7 +7,7 @@ from cloudwise.models.vm import VM
 from cloudwise.monitoring.metrics import MetricsCollector
 
 
-def execute_task(env: simpy.Environment, vm: VM, task: CloudTask, metrics: MetricsCollector):
+def execute_task(env: simpy.Environment, vm: VM, task: CloudTask, metrics: MetricsCollector, on_terminal=None):
     with vm.cpu_slot.request() as request:
         yield request
         vm.account_until(env.now)
@@ -26,3 +26,5 @@ def execute_task(env: simpy.Environment, vm: VM, task: CloudTask, metrics: Metri
         task.finish_time = env.now
         task.status = "COMPLETED"
         metrics.record_completion(task, vm)
+        if on_terminal is not None:
+            on_terminal()

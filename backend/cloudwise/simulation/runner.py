@@ -15,6 +15,7 @@ from cloudwise.scheduling.awlb import AWLBPolicy
 from cloudwise.scheduling.fcfs import FCFSPolicy
 from cloudwise.scheduling.round_robin import RoundRobinPolicy
 from cloudwise.simulation.broker import Broker, task_arrival
+from cloudwise.simulation.scaling import ScalingController
 from cloudwise.workload.generator import generate_workload
 
 
@@ -67,11 +68,31 @@ def run_simulation(config: ScenarioConfig | Mapping[str, Any],
     vms = sorted(datacenter.vms, key=lambda vm: vm.vm_id)
     metrics = MetricsCollector()
     logger = AllocationLogger()
-    broker = Broker(env, vms, _build_policy(config), metrics, logger)
+    stop_event = env.event()
+    terminal_count = 0
+    def task_terminal():
+        nonlocal terminal_count
+        terminal_count += 1
+        if terminal_count == len(tasks) and not stop_event.triggered:
+            stop_event.succeed()
+
+    broker = Broker(env, vms, _build_policy(config), metrics, logger, task_terminal)
+    controller = ScalingController(env, datacenter, broker, config, stop_event) if config.scaling_enabled else None
+    if controller is not None and tasks:
+        env.process(controller.run())
     for task in tasks:
         env.process(task_arrival(env, broker, task))
-    env.run()
-    summary, vm_metrics = build_metrics(tasks, vms, env.now)
+    if controller is not None and tasks:
+        # Stop at the final terminal task, not at an orphaned monitoring timeout.
+        env.run(until=stop_event)
+    else:
+        env.run()
+    measured_vms = controller.all_vms if controller is not None else vms
+    summary, vm_metrics = build_metrics(tasks, measured_vms, env.now)
+    if controller is not None:
+        summary["scaleOutEvents"] = sum(e["action"] == "SCALE_OUT" for e in controller.events)
+        summary["scaleInEvents"] = sum(e["action"] == "SCALE_IN" for e in controller.events)
+        summary["finalActiveVms"] = len(datacenter.vms)
     slug = re.sub(r"[^a-z0-9]+", "-", config.name.lower()).strip("-") or "scenario"
     return {
         "schemaVersion": "1.0",
@@ -82,11 +103,14 @@ def run_simulation(config: ScenarioConfig | Mapping[str, Any],
         "vmMetrics": vm_metrics,
         "taskResults": [_task_row(task) for task in tasks],
         "allocationLog": logger.records,
+        "scalingEvents": controller.events if controller is not None else [],
     }
 
 
 def run_comparison(config: ScenarioConfig | Mapping[str, Any]) -> dict:
     config = _parse_config(config)
+    if config.scaling_enabled:
+        raise ValueError("Scaling experiments must be run separately from fixed-capacity policy comparisons")
     base_workload = generate_workload(config)
     return {
         "schemaVersion": "1.0",

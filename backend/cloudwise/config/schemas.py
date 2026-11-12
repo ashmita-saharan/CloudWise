@@ -41,6 +41,17 @@ class ScenarioConfig(BaseModel):
     awlb_ram_weight: float = Field(default=0.30, ge=0)
     awlb_queue_weight: float = Field(default=0.20, ge=0)
 
+    # Optional simulated auto-scaling; disabled for fair fixed-capacity comparisons.
+    scaling_enabled: bool = False
+    scaling_min_vms: int = Field(default=1, ge=1)
+    scaling_max_vms: int = Field(default=12, ge=1)
+    scaling_sample_interval: float = Field(default=1.0, gt=0)
+    scaling_up_threshold: float = Field(default=0.80, gt=0, le=1)
+    scaling_down_threshold: float = Field(default=0.30, ge=0, lt=1)
+    scaling_up_window: int = Field(default=2, ge=1)
+    scaling_down_window: int = Field(default=4, ge=1)
+    scaling_cooldown: float = Field(default=5.0, ge=0)
+
     @model_validator(mode="after")
     def check_ranges_and_weights(self) -> "ScenarioConfig":
         if self.task_length_mi_min > self.task_length_mi_max:
@@ -52,4 +63,10 @@ class ScenarioConfig(BaseModel):
         weights = self.awlb_cpu_weight + self.awlb_ram_weight + self.awlb_queue_weight
         if abs(weights - 1.0) > 1e-9:
             raise ValueError("AWLB weights must sum to 1")
+        if self.scaling_down_threshold >= self.scaling_up_threshold:
+            raise ValueError("scale-down threshold must be below scale-up threshold")
+        if self.scaling_enabled and not (self.scaling_min_vms <= self.vms <= self.scaling_max_vms):
+            raise ValueError("scaling requires min_vms <= initial vms <= max_vms")
+        if self.scaling_enabled and self.vm_specs is not None:
+            raise ValueError("scaling currently requires uniform VM sizes (vm_specs must be null)")
         return self
