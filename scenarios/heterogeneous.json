@@ -1,0 +1,19 @@
+{
+  "name": "heterogeneous",
+  "hosts": 3,
+  "vms": 6,
+  "tasks": 500,
+  "seed": 42,
+  "algorithm": "AWLB",
+  "arrival_window": 100.0,
+  "task_ram_mb_max": 4096,
+  "task_required_pes_max": 3,
+  "vm_specs": [
+    { "pes": 1, "mips_per_core": 800, "ram_mb": 2048 },
+    { "pes": 2, "mips_per_core": 1200, "ram_mb": 4096 },
+    { "pes": 4, "mips_per_core": 1500, "ram_mb": 8192 },
+    { "pes": 2, "mips_per_core": 1100, "ram_mb": 4096 },
+    { "pes": 1, "mips_per_core": 1800, "ram_mb": 2048 },
+    { "pes": 2, "mips_per_core": 1000, "ram_mb": 4096 }
+  ]
+}

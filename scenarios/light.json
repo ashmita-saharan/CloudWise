@@ -1,0 +1,9 @@
+{
+  "name": "light",
+  "hosts": 2,
+  "vms": 4,
+  "tasks": 100,
+  "seed": 42,
+  "algorithm": "AWLB",
+  "arrival_window": 100.0
+}

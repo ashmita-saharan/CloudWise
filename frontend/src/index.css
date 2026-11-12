@@ -1,0 +1,10 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+body { @apply bg-slate-50 text-ink antialiased; }
+button:disabled { @apply opacity-60 cursor-not-allowed; }
+input, select { @apply mt-1 block w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100; }
+.card { @apply rounded-xl border border-slate-200 bg-white shadow-sm; }
+.card-title { @apply text-sm font-semibold uppercase tracking-wide text-slate-500; }
+.table-head { @apply bg-slate-100 text-left text-xs font-semibold uppercase tracking-wide text-slate-500; }

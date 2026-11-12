@@ -1,0 +1,9 @@
+{
+  "name": "medium",
+  "hosts": 3,
+  "vms": 6,
+  "tasks": 500,
+  "seed": 42,
+  "algorithm": "AWLB",
+  "arrival_window": 100.0
+}

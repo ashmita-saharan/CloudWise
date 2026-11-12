@@ -1,0 +1,20 @@
+# Python
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.venv/
+.env
+.coverage
+# Frontend
+node_modules/
+dist/
+frontend/.env
+# Generated experiment outputs (keep placeholder files)
+results/raw/*
+!results/raw/.gitkeep
+results/reports/*
+!results/reports/.gitkeep
+# OS / IDE
+.DS_Store
+.vscode/
+.idea/
